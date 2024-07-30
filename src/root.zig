@@ -502,9 +502,12 @@ fn readCode(out_lens: []u8, rd: anytype) !void {
     if ((try rd.readBitsNoEof(u1, 1)) == 1) {
         const num_syms = 1 + try rd.readBitsNoEof(u2, 1);
         const fs = try rd.readBitsNoEof(u8, if (1 == try rd.readBitsNoEof(u1, 1)) 8 else 1);
+        if (fs > out_lens.len) return error.Invalid;
         out_lens[fs] = 1;
         if (num_syms == 2) {
-            out_lens[try rd.readBitsNoEof(u8, 8)] = 1;
+            const ss = try rd.readBitsNoEof(u8, 8);
+            if (ss > out_lens.len) return error.Invalid;
+            out_lens[ss] = 1;
         }
         return;
     }
@@ -538,16 +541,19 @@ fn readCode(out_lens: []u8, rd: anytype) !void {
             },
             16 => {
                 const len = 3 + try rd.readBitsNoEof(u3, 2);
+                if (out_lens[wdst..].len < len) return error.Invalid;
                 @memset(out_lens[wdst..][0..len], prev_len);
                 wdst += len;
             },
             17 => {
                 const len = 3 + try rd.readBitsNoEof(u4, 3);
+                if (out_lens[wdst..].len < len) return error.Invalid;
                 @memset(out_lens[wdst..][0..len], 0);
                 wdst += len;
             },
             18 => {
                 const len = 11 + try rd.readBitsNoEof(u8, 7);
+                if (out_lens[wdst..].len < len) return error.Invalid;
                 @memset(out_lens[wdst..][0..len], 0);
                 wdst += len;
             },
